@@ -1,0 +1,127 @@
+<main class="col-md-8">
+    <article class="post post-1">
+        <header class="entry-header">
+            <h1 class="entry-title">{{.Info.Title}}</h1>
+            <div class="entry-meta">
+                <span class="post-category"><a href="#">分类</a></span>
+                {{range $k, $v := .CategoryIds}}
+                <span class="post-date">{{$v}}</span>
+                {{end}}
+                <span class="post-category"><a href="#">标签</a></span>
+                {{range $k, $v := .tagIds}}
+                <span class="post-author"><a href="#">{{$v}}</a></span>
+                {{end}}
+                <span class="post-category"><a href="#">创建日期</a></span>
+                <span class="views-count"><a href="#">{{.Info.CreatedAt | TimeToDate}}</a></span>
+            </div>
+        </header>
+        <div>
+            <blockquote>
+                <p>{{.Info.Descript}}</p>
+            </blockquote>
+        </div>
+        <div class="entry-content clearfix">
+            {{.Info.Content | strToHtml}}
+        </div>
+    </article>
+    <section class="comment-area" id="comment-area">
+        <hr>
+        <h3>发表评论</h3>
+        <form action="/frontend/comment" method="post" class="comment-form">
+            <div class="row">
+                <input type="text" name="ArticleId" value="{{.Info.ID}}" style="display: none">
+                <div class="col-md-12">
+                    <label for="id_comment">评论：</label> <p style="float: right;">最多200字</p>
+                    <textarea name="CommentContent" id="id_comment" required></textarea>
+                    <button type="submit" class="comment-btn">发表</button>
+                </div>
+            </div>    <!-- row -->
+        </form>
+        <div class="comment-list-panel">
+            <h3>评论列表，共 <span>{{len .CommentList}}</span> 条评论</h3>
+            <ul class="comment-list list-unstyled">
+                {{range $k, $v := .CommentList}}
+                <li class="comment-item">
+                    <span class="nickname"><a href="javascript:;" onclick="changeComment({{$v}})"><i class="fa fa-thumbs-o-up"></i></a>(<span id="comment{{$v.ID}}">{{$v.CommentLikeCount}}</span>)<a href="javascript:;" onclick="changeCommentReduce({{$v}})"><i class="fa fa-thumbs-o-down"></i></a>(<span id="commentReduce{{$v.ID}}">{{$v.CommentUnlikeCount}}</span>)</span>
+                    <span class="nickname">
+                        {{if $v.UserId}}
+                            $v.UserId
+                        {{else}}
+                            游客
+                        {{end}}
+                    </span>
+                    <time class="submit-date" datetime="2012-11-09T23:15:57+00:00">{{$v.CreatedAt | TimeToDate}}</time>
+                    <div class="text">
+                        {{$v.CommentContent}}
+                    </div>
+                </li>
+                {{end}}
+            </ul>
+        </div>
+    </section>
+</main>
+
+<script>
+    let commentRe = [];
+    function changeComment(comment) {
+        if (commentRe.indexOf(comment.ID) < 0) {
+            $.ajax({
+                type: "post",
+                contentType: "application/json;charset=UTF-8",
+                url: "/frontend/comment/like",
+                data: JSON.stringify(comment),
+                success: function(result) {
+                    if (result.result) {
+                        $("#comment" + result.id).text(result.result)
+                    } else {
+                        alert("change error")
+                        return
+                    }
+                    commentRe.push(result.id);
+                },
+                error: function(e) {
+                    console.log(e)
+                    alert(e.message)
+                }
+            })
+        }
+    }
+
+    let commentReduce = []
+
+    function changeCommentReduce(comment) {
+        if (commentReduce.indexOf(comment.ID) < 0) {
+            $.ajax({
+                type: "post",
+                contentType: "application/json;charset=UTF-8",
+                url: "/frontend/comment/un/like",
+                data: JSON.stringify(comment),
+                success: function(result) {
+                    if (result.result) {
+                        $("#commentReduce" + result.id).text(result.result)
+                    } else {
+                        alert("change error")
+                        return
+                    }
+                    commentReduce.push(result.id);
+                },
+                error: function(e) {
+                    console.log(e)
+                    alert(e.message)
+                }
+            })
+        }
+    }
+    // function changeInput() {
+    //     if ($("#id_comment").val().length > 2) {
+    //         $("#id_comment").val($("#id_comment").val().substring(0, 2));
+    //         alert('字数过多');
+    //     }
+    // }
+    $('#id_comment').bind('input', function(e) {
+        if (e.target.value.length > 200) {
+            $("#id_comment").val(e.target.value.substring(0, 200));
+            alert("字数过多")
+        }
+    })
+</script>
